@@ -2,22 +2,29 @@
 
 import { useState } from "react";
 
+// 1. id（文字列または数値）を追加しました
 type Task = {
+  id: string;
   text: string;
   date: string;
   category: string;
   completed: boolean;
 };
 
+// カテゴリの選択肢をあらかじめ定義しておきます
+const CATEGORIES = ["トマト", "じゃがいも", "きゅうり", "なす", "その他"];
+
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([
     {
+      id: "1",
       text: "トマトの水やり",
       date: "2026-05-23",
       category: "トマト",
       completed: false,
     },
     {
+      id: "2",
       text: "じゃがいもの収穫",
       date: "2026-05-22",
       category: "じゃがいも",
@@ -27,12 +34,15 @@ export default function Home() {
 
   const [text, setText] = useState("");
   const [date, setDate] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("トマト"); // 初期値を設定
 
   const addTask = () => {
     if (!text || !date || !category) return;
 
+    // 新しいタスクに一意のID（ここではタイムスタンプ）を持たせます
+    // ※今後Supabaseを使うときは、Supabase側が自動でIDを生成してくれます
     const newTask: Task = {
+      id: crypto.randomUUID(), // ランダムなIDを生成
       text,
       date,
       category,
@@ -43,17 +53,19 @@ export default function Home() {
 
     setText("");
     setDate("");
-    setCategory("");
+    setCategory("トマト");
   };
 
-  const deleteTask = (index: number) => {
-    setTasks(tasks.filter((_, i) => i !== index));
+  // indexではなく、idを使って削除するように変更しました
+  const deleteTask = (id: string) => {
+    setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  const toggleComplete = (index: number) => {
+  // indexではなく、idを使って完了状態を切り替えるように変更しました
+  const toggleComplete = (id: string) => {
     setTasks(
-      tasks.map((task, i) =>
-        i === index ? { ...task, completed: !task.completed } : task,
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task,
       ),
     );
   };
@@ -78,27 +90,32 @@ export default function Home() {
               placeholder="作業内容"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3"
+              className="w-full border rounded-xl px-4 py-3 focus:outline-green-600"
             />
 
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3"
+              className="w-full border rounded-xl px-4 py-3 focus:outline-green-600"
             />
 
-            <input
-              type="text"
-              placeholder="作物カテゴリ"
+            {/* 作物カテゴリを入力式から「選択式（セレクト）」に変更しました */}
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3"
-            />
+              className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
             <button
               onClick={addTask}
-              className="w-full bg-green-700 text-white py-3 rounded-xl hover:bg-green-800 transition"
+              className="w-full bg-green-700 text-white py-3 rounded-xl hover:bg-green-800 transition font-semibold shadow-md"
             >
               作業を追加
             </button>
@@ -110,15 +127,17 @@ export default function Home() {
         </div>
 
         <div className="space-y-4">
-          {tasks.map((task, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow p-5">
+          {tasks.map((task) => (
+            // keyを index から task.id に変更しました
+            <div key={task.id} className="bg-white rounded-2xl shadow p-5">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <input
                       type="checkbox"
+                      className="w-5 h-5 accent-green-700"
                       checked={task.completed}
-                      onChange={() => toggleComplete(index)}
+                      onChange={() => toggleComplete(task.id)} // idを渡す
                     />
 
                     <h3
@@ -132,14 +151,16 @@ export default function Home() {
                     </h3>
                   </div>
 
-                  <p className="text-gray-500">📅 {task.date}</p>
+                  <p className="text-gray-500 text-sm mb-1">📅 {task.date}</p>
 
-                  <p className="text-gray-500">🥬 {task.category}</p>
+                  <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
+                    🥬 {task.category}
+                  </span>
                 </div>
 
                 <button
-                  onClick={() => deleteTask(index)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600"
+                  onClick={() => deleteTask(task.id)} // idを渡す
+                  className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 text-sm font-medium transition"
                 >
                   削除
                 </button>
