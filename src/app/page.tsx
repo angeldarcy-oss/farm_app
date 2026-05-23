@@ -7,7 +7,7 @@ type Task = {
   text: string;
   date: string;
   category: string;
-  weather: string; // 🌤 天気の型を追加
+  weather: string;
   completed: boolean;
 };
 
@@ -20,16 +20,42 @@ const TASK_CONTENTS = [
   "収穫",
   "その他",
 ];
-const CATEGORIES = ["トマト", "じゃがいも", "きゅうり", "なす", "その他"];
-const WEATHERS = ["☀️ 晴", "☔ 雨", "☁️ 曇", "🌀 その他"]; // 🌤 天気の選択肢を定義
+const CATEGORIES = [
+  "トマト",
+  "じゃがいも",
+  "きゅうり",
+  "なす",
+  "にんじん",
+  "たまねぎ",
+  "キャベツ",
+  "レタス",
+  "ピーマン",
+  "いちご",
+  "枝豆",
+  "そら豆",
+  "さやえんどう",
+  "スナップエンドウ",
+  "インゲン豆",
+  "落花生",
+  "大豆",
+  "小豆",
+  "その他",
+];
+const WEATHERS = ["☀️ 晴", "☔ 雨", "☁️ 曇", "🌀 その他"];
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
+  // セレクトボックスの選択状態
   const [text, setText] = useState("種まき");
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("トマト");
-  const [weather, setWeather] = useState("☀️ 晴"); // 🌤 天気の初期値
+  const [weather, setWeather] = useState("☀️ 晴");
+
+  // ✍️ 「その他」を選んだとき用の自由入力テキスト
+  const [customText, setCustomText] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 💾 データの読み込み
@@ -68,23 +94,35 @@ export default function Home() {
   }, [tasks, isLoaded]);
 
   const addTask = () => {
-    if (!text || !date || !category || !weather) return;
+    // 💡「その他」なら自由入力の値、それ以外ならセレクトボックスの値を使う
+    const finalSubstance = text === "その他" ? customText.trim() : text;
+    const finalCategory =
+      category === "その他" ? customCategory.trim() : category;
+
+    // 入力がない場合は追加しない
+    if (!finalSubstance || !date || !finalCategory || !weather) {
+      alert("未入力の項目があります");
+      return;
+    }
 
     const newTask: Task = {
       id: crypto.randomUUID(),
-      text,
+      text: finalSubstance,
       date,
-      category,
-      weather, // 🌤 新しいタスクに天気を追加
+      category: finalCategory,
+      weather,
       completed: false,
     };
 
     setTasks([newTask, ...tasks]);
 
+    // リセット
     setText("種まき");
     setDate("");
     setCategory("トマト");
-    setWeather("☀️ 晴"); // 天気をリセット
+    setWeather("☀️ 晴");
+    setCustomText("");
+    setCustomCategory("");
   };
 
   const deleteTask = (id: string) => {
@@ -107,7 +145,6 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center text-green-800 mb-2">
           農作業管理アプリ 🌱
         </h1>
-
         <p className="text-center text-gray-600 mb-8">
           今日の農作業を記録しましょう
         </p>
@@ -116,6 +153,7 @@ export default function Home() {
           <h2 className="text-2xl font-semibold mb-4">作業を追加</h2>
 
           <div className="space-y-4">
+            {/* 作業内容の選択 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 作業内容
@@ -131,8 +169,20 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+
+              {/* ✍️ 「その他」が選ばれた時だけ入力欄を出す */}
+              {text === "その他" && (
+                <input
+                  type="text"
+                  placeholder="具体的な作業内容を入力（例：支柱立て）"
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  className="w-full border border-green-300 rounded-xl px-4 py-2 mt-2 bg-green-50 focus:outline-green-600"
+                />
+              )}
             </div>
 
+            {/* 日付 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 日付
@@ -145,7 +195,7 @@ export default function Home() {
               />
             </div>
 
-            {/* 🌤 天気の入力欄（セレクトボックス）を追加 */}
+            {/* 天気 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 天気
@@ -163,6 +213,7 @@ export default function Home() {
               </select>
             </div>
 
+            {/* 作物カテゴリの選択 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 作物カテゴリ
@@ -178,6 +229,17 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+
+              {/* ✍️ 「その他」が選ばれた時だけ入力欄を出す */}
+              {category === "その他" && (
+                <input
+                  type="text"
+                  placeholder="野菜・豆の名前を入力（例：ズッキーニ）"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  className="w-full border border-green-300 rounded-xl px-4 py-2 mt-2 bg-green-50 focus:outline-green-600"
+                />
+              )}
             </div>
 
             <button
@@ -189,6 +251,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* タスク一覧表示 */}
         <div className="mb-4 text-gray-700 font-medium">
           作業件数: {tasks.length}件
         </div>
@@ -205,31 +268,22 @@ export default function Home() {
                       checked={task.completed}
                       onChange={() => toggleComplete(task.id)}
                     />
-
                     <h3
-                      className={`text-xl font-semibold ${
-                        task.completed
-                          ? "line-through text-gray-400"
-                          : "text-gray-800"
-                      }`}
+                      className={`text-xl font-semibold ${task.completed ? "line-through text-gray-400" : "text-gray-800"}`}
                     >
                       {task.text}
                     </h3>
                   </div>
-
                   <p className="text-gray-500 text-sm mb-2">📅 {task.date}</p>
-
                   <div className="flex gap-2">
                     <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
                       🥬 {task.category}
                     </span>
-                    {/* 🌤 記録カードに天気のバッジを表示 */}
                     <span className="inline-block bg-blue-50 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">
                       {task.weather}
                     </span>
                   </div>
                 </div>
-
                 <button
                   onClick={() => deleteTask(task.id)}
                   className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 text-sm font-medium transition"
