@@ -7,10 +7,10 @@ type Task = {
   text: string;
   date: string;
   category: string;
+  weather: string; // 🌤 天気の型を追加
   completed: boolean;
 };
 
-// 1. セレクトボックス用の選択肢を定義します
 const TASK_CONTENTS = [
   "種まき",
   "定植",
@@ -21,30 +21,30 @@ const TASK_CONTENTS = [
   "その他",
 ];
 const CATEGORIES = ["トマト", "じゃがいも", "きゅうり", "なす", "その他"];
+const WEATHERS = ["☀️ 晴", "☔ 雨", "☁️ 曇", "🌀 その他"]; // 🌤 天気の選択肢を定義
 
 export default function Home() {
-  // 初期データは空にしておき、useEffectでブラウザから読み込みます
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // 2. 入力項目の初期状態を設定（作業内容も初期値を設定）
   const [text, setText] = useState("種まき");
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("トマト");
-  const [isLoaded, setIsLoaded] = useState(false); // 読み込み完了フラグ
+  const [weather, setWeather] = useState("☀️ 晴"); // 🌤 天気の初期値
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // 💾 【保存機能1】アプリを開いたときに、ブラウザに保存されているデータを読み込む
+  // 💾 データの読み込み
   useEffect(() => {
     const savedTasks = localStorage.getItem("farm-tasks");
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
     } else {
-      // 最初だけサンプルを表示
       setTasks([
         {
           id: "1",
           text: "水やり",
           date: "2026-05-23",
           category: "トマト",
+          weather: "☀️ 晴",
           completed: false,
         },
         {
@@ -52,6 +52,7 @@ export default function Home() {
           text: "収穫",
           date: "2026-05-22",
           category: "じゃがいも",
+          weather: "☁️ 曇",
           completed: true,
         },
       ]);
@@ -59,7 +60,7 @@ export default function Home() {
     setIsLoaded(true);
   }, []);
 
-  // 💾 【保存機能2】タスク一覧（tasks）が更新されたら、自動でブラウザに保存する
+  // 💾 データの保存
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem("farm-tasks", JSON.stringify(tasks));
@@ -67,22 +68,23 @@ export default function Home() {
   }, [tasks, isLoaded]);
 
   const addTask = () => {
-    if (!text || !date || !category) return;
+    if (!text || !date || !category || !weather) return;
 
     const newTask: Task = {
       id: crypto.randomUUID(),
       text,
       date,
       category,
+      weather, // 🌤 新しいタスクに天気を追加
       completed: false,
     };
 
     setTasks([newTask, ...tasks]);
 
-    // 入力欄をリセット（セレクトボックスは初期値に戻す）
     setText("種まき");
     setDate("");
     setCategory("トマト");
+    setWeather("☀️ 晴"); // 天気をリセット
   };
 
   const deleteTask = (id: string) => {
@@ -97,7 +99,6 @@ export default function Home() {
     );
   };
 
-  // 読み込みが完了する前はチラつき防止のために何も出さない、またはローディングを出す
   if (!isLoaded) return null;
 
   return (
@@ -115,46 +116,69 @@ export default function Home() {
           <h2 className="text-2xl font-semibold mb-4">作業を追加</h2>
 
           <div className="space-y-4">
-            {/* 🛠 作業内容を入力式から「選択式（セレクト）」に変更しました */}
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              作業内容
-            </label>
-            <select
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
-            >
-              {TASK_CONTENTS.map((content) => (
-                <option key={content} value={content}>
-                  {content}
-                </option>
-              ))}
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                作業内容
+              </label>
+              <select
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
+              >
+                {TASK_CONTENTS.map((content) => (
+                  <option key={content} value={content}>
+                    {content}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              日付
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3 focus:outline-green-600"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                日付
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 focus:outline-green-600"
+              />
+            </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              作物カテゴリ
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+            {/* 🌤 天気の入力欄（セレクトボックス）を追加 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                天気
+              </label>
+              <select
+                value={weather}
+                onChange={(e) => setWeather(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
+              >
+                {WEATHERS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                作物カテゴリ
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <button
               onClick={addTask}
@@ -195,9 +219,15 @@ export default function Home() {
 
                   <p className="text-gray-500 text-sm mb-2">📅 {task.date}</p>
 
-                  <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
-                    🥬 {task.category}
-                  </span>
+                  <div className="flex gap-2">
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
+                      🥬 {task.category}
+                    </span>
+                    {/* 🌤 記録カードに天気のバッジを表示 */}
+                    <span className="inline-block bg-blue-50 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">
+                      {task.weather}
+                    </span>
+                  </div>
                 </div>
 
                 <button
