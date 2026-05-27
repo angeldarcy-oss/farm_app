@@ -7,6 +7,7 @@ type Task = {
   text: string;
   date: string;
   category: string;
+  variety: string; // 🍅 品種を追加
   weather: string;
   completed: boolean;
 };
@@ -21,7 +22,7 @@ const TASK_CONTENTS = [
   "その他",
 ];
 
-// 🥬 野菜の分類グループ（セレクトボックスで見やすく整理）
+// 🥬 野菜の分類グループ
 const CATEGORY_GROUPS = [
   {
     group: "🍅 トマト（細分化）",
@@ -123,6 +124,7 @@ export default function Home() {
   const [text, setText] = useState("種まき");
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("ミニトマト");
+  const [variety, setVariety] = useState(""); // ✍️ 品種用の状態
   const [weather, setWeather] = useState("☀️ 晴");
 
   // ✍️ 「その他」を選んだとき用の自由入力テキスト
@@ -143,6 +145,7 @@ export default function Home() {
           text: "水やり",
           date: "2026-05-23",
           category: "ミニトマト",
+          variety: "アイコ",
           weather: "☀️ 晴",
           completed: false,
         },
@@ -151,6 +154,7 @@ export default function Home() {
           text: "収穫",
           date: "2026-05-22",
           category: "じゃがいも",
+          variety: "キタアカリ",
           weather: "☁️ 曇",
           completed: true,
         },
@@ -167,12 +171,10 @@ export default function Home() {
   }, [tasks, isLoaded]);
 
   const addTask = () => {
-    // 💡「その他」なら自由入力の値、それ以外ならセレクトボックスの値を使う
     const finalSubstance = text === "その他" ? customText.trim() : text;
     const finalCategory =
       category === "その他" ? customCategory.trim() : category;
 
-    // 入力がない場合は追加しない
     if (!finalSubstance || !date || !finalCategory || !weather) {
       alert("未入力の項目があります");
       return;
@@ -183,16 +185,18 @@ export default function Home() {
       text: finalSubstance,
       date,
       category: finalCategory,
+      variety: variety.trim(), // 品種を保存（空欄でもOK）
       weather,
       completed: false,
     };
 
     setTasks([newTask, ...tasks]);
 
-    // リセット
+    // リセット（日付は続けて入力しやすいように残すのもアリですが、一旦リセットします）
     setText("種まき");
     setDate("");
     setCategory("ミニトマト");
+    setVariety("");
     setWeather("☀️ 晴");
     setCustomText("");
     setCustomCategory("");
@@ -209,6 +213,24 @@ export default function Home() {
       ),
     );
   };
+
+  // 🛠️ タスクを日付ごとにグループ化する処理
+  const groupedTasks = tasks.reduce(
+    (groups, task) => {
+      const date = task.date;
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(task);
+      return groups;
+    },
+    {} as Record<string, Task[]>,
+  );
+
+  // 日付を新しい順（降順）に並び替える
+  const sortedDates = Object.keys(groupedTasks).sort((a, b) =>
+    b.localeCompare(a),
+  );
 
   if (!isLoaded) return null;
 
@@ -243,7 +265,6 @@ export default function Home() {
                 ))}
               </select>
 
-              {/* ✍️ 「その他」が選ばれた時だけ入力欄を出す */}
               {text === "その他" && (
                 <input
                   type="text"
@@ -296,7 +317,6 @@ export default function Home() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full border rounded-xl px-4 py-3 bg-white focus:outline-green-600"
               >
-                {/* 🛠️ optgroupを使ってグループ分け表示します */}
                 {CATEGORY_GROUPS.map((groupObj) => (
                   <optgroup key={groupObj.group} label={groupObj.group}>
                     {groupObj.items.map((cat) => (
@@ -308,7 +328,6 @@ export default function Home() {
                 ))}
               </select>
 
-              {/* ✍️ 「その他」が選ばれた時だけ入力欄を出す */}
               {category === "その他" && (
                 <input
                   type="text"
@@ -318,6 +337,20 @@ export default function Home() {
                   className="w-full border border-green-300 rounded-xl px-4 py-2 mt-2 bg-green-50 focus:outline-green-600"
                 />
               )}
+            </div>
+
+            {/* 🍅 品種の入力欄を追加 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                品種（任意）
+              </label>
+              <input
+                type="text"
+                placeholder="品種名を入力（例：アイコ、フルティカ、千両二号）"
+                value={variety}
+                onChange={(e) => setVariety(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 focus:outline-green-600"
+              />
             </div>
 
             <button
@@ -331,43 +364,68 @@ export default function Home() {
 
         {/* タスク一覧表示 */}
         <div className="mb-4 text-gray-700 font-medium">
-          作業件数: {tasks.length}件
+          総作業件数: {tasks.length}件
         </div>
 
-        <div className="space-y-4">
-          {tasks.map((task) => (
-            <div key={task.id} className="bg-white rounded-2xl shadow p-5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 accent-green-700"
-                      checked={task.completed}
-                      onChange={() => toggleComplete(task.id)}
-                    />
-                    <h3
-                      className={`text-xl font-semibold ${task.completed ? "line-through text-gray-400" : "text-gray-800"}`}
+        {/* 🛠️ 日付ごとにまとめて表示するデザインに変更 */}
+        <div className="space-y-6">
+          {sortedDates.map((dateString) => (
+            <div
+              key={dateString}
+              className="bg-white rounded-3xl shadow-md overflow-hidden border border-green-100"
+            >
+              {/* 日付のヘッダー部分 */}
+              <div className="bg-green-50 px-6 py-3 flex justify-between items-center border-b border-green-100">
+                <span className="text-lg font-bold text-green-800">
+                  📅 {dateString}
+                </span>
+                {/* その日の天気（複数ある場合は最初のタスクの天気を代表で表示） */}
+                <span className="bg-white px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+                  {groupedTasks[dateString][0].weather}
+                </span>
+              </div>
+
+              {/* その日の作業リスト */}
+              <div className="divide-y divide-gray-100">
+                {groupedTasks[dateString].map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-5 flex justify-between items-center hover:bg-gray-50 transition"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 accent-green-700 cursor-pointer"
+                        checked={task.completed}
+                        onChange={() => toggleComplete(task.id)}
+                      />
+                      <div>
+                        <h3
+                          className={`text-xl font-semibold ${task.completed ? "line-through text-gray-400" : "text-gray-800"}`}
+                        >
+                          {task.text}
+                        </h3>
+                        <div className="flex gap-2 mt-1.5 flex-wrap">
+                          <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
+                            🥬 {task.category}
+                          </span>
+                          {/* 品種がある時だけ表示 */}
+                          {task.variety && (
+                            <span className="inline-block bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">
+                              🏷️ {task.variety}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="bg-red-500 text-white px-3 py-1.5 rounded-xl hover:bg-red-600 text-sm font-medium transition ml-4"
                     >
-                      {task.text}
-                    </h3>
+                      削除
+                    </button>
                   </div>
-                  <p className="text-gray-500 text-sm mb-2">📅 {task.date}</p>
-                  <div className="flex gap-2">
-                    <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
-                      🥬 {task.category}
-                    </span>
-                    <span className="inline-block bg-blue-50 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">
-                      {task.weather}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 text-sm font-medium transition"
-                >
-                  削除
-                </button>
+                ))}
               </div>
             </div>
           ))}
